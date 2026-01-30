@@ -1,0 +1,36 @@
+{
+  "dependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/pg": "^8.16.0",
+    "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "nodemon": "^3.1.11",
+    "pg": "^8.16.3",
+    "uuid": "^13.0.0",
+    "zod": "^4.3.5"
+  },
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon --exec ts-node server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.0.6",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}
