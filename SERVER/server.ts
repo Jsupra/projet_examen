@@ -5,6 +5,7 @@ import express, { Request, Response } from "express";
 import cors from "cors";
 import db from "./src/config/database";
 import authRoutes from "./src/routes/auth.routes";
+import setup from "./src/config/dbInit";
 
 // Models
 
@@ -34,7 +35,7 @@ const start_server = async () => {
         client.release();
 
         console.log('Tables initialization...');
-        // initialisation    
+        setup();   
         console.log('Tables initialized successfully');
 
         app.listen(PORT, () => {

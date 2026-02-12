@@ -2,8 +2,8 @@ import { z } from 'zod';
 
 // 1. Types de base et Unions
 type UUID = string;
-export type UserRole = 'Administrateur' | 'Membre';
-export type TaskStatus = 'A faire' | 'En cours' | 'Termine';
+export type User_Role = 'Administrateur' | 'Membre';
+export type Task_Status = 'A faire' | 'En cours' | 'Termine';
 
 // 2. Schémas de validation (Zod)
 export const registerSchema = z.object({
@@ -40,7 +40,7 @@ export interface User {
     username: string;
     name_display: string;
     email: string;
-    role: UserRole;
+    role: User_Role;
     password_hash: string;
     created_at: Date;
 }
@@ -58,7 +58,7 @@ export interface Task {
     project_id: UUID;
     title: string;
     description: string;
-    statut: TaskStatus;
+    statut: Task_Status;
     assigned_to: UUID;
     echeance: Date;
     created_at: Date;
@@ -69,7 +69,7 @@ export interface user_public {
     username: string;
     name_display: string;
     email: string;
-    role: UserRole;
+    role: User_Role;
     created_at: Date;
 }
 

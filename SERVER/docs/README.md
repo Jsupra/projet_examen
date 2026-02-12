@@ -21,7 +21,7 @@ Cette application est un système de blog dynamique permettant la gestion des ut
 ## 📁 Structure du Projet
 
 ```text
-projet-exaen/
+projet-examen/
 ├── CLIENT/              # Code source du front-end (React/Vite...)
 ├── SERVER/              # Code source du back-end (Exress/TS)
 │   ├── src/
