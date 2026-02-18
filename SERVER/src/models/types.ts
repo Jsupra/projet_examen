@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 // 1. Types de base et Unions
 type UUID = string;
-export type User_Role = 'Administrateur' | 'Membre';
+export type User_Role = 'admin' | 'Membre';
 export type Task_Status = 'A faire' | 'En cours' | 'Termine';
 
 // 2. Schémas de validation (Zod)
@@ -10,7 +10,7 @@ export const registerSchema = z.object({
     username: z.string().min(3, "username must be 3 characters min").max(50),
     name_display: z.string().min(3, "name display must be 3 character or plus").max(50),
     email: z.string().email("email is not valid"),
-    role: z.enum(['Administrateur', 'Membre']).default('Membre'),
+    role: z.enum(['admin', 'Membre']).default('Membre'),
     password: z.string().min(8, "password must be at least 8 characters long").max(50)
 });
 
@@ -82,6 +82,6 @@ export interface refresh_tokens {
 
 // 4. Types inférés (DTO)
 export type register_dto = z.infer<typeof registerSchema>;
-export type login = z.infer<typeof login_schema>;
+export type login_dto = z.infer<typeof login_schema>;
 export type project_dto = z.infer<typeof projetSchema>;
 export type task_dto = z.infer<typeof tasksSchema>;

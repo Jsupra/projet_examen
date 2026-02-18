@@ -4,7 +4,7 @@ import db from "./database"
 
 
 
-const setup = async () => {
+const setupDb = async () => {
    try {
     const schemaPath = path.join(__dirname, "../database/schema.sql")
     const schema = await fs.readFile(schemaPath, "utf-8")
@@ -22,4 +22,4 @@ const setup = async () => {
 }
 
 
-export default setup
+export default setupDb
