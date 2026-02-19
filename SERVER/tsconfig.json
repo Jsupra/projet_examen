@@ -9,9 +9,18 @@
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "noEmitOnError": true
-    // "allowImportingTsExtensions" : true
+    "noEmitOnError": true,
+    "typeRoots": [
+      "./node_modules/@types",
+      "./src/models"
+    ]
   },
-  "include": ["server.ts", "src/**/*"],
-  "exclude": ["node_modules"]
+  "include": [
+    "server.ts",
+    "src/**/*",
+    "types/express.d.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

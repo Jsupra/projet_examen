@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { Request } from 'express';
 
 // 1. Types de base et Unions
 type UUID = string;
@@ -77,6 +78,12 @@ export interface refresh_tokens {
     token: string;
     user_id: UUID;
     expires_at: Date;
+}
+
+export interface UserPayload {
+    id: string;
+    username: string;
+    role: string;
 }
 
 // 4. Types inférés (DTO)
