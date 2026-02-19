@@ -15,15 +15,14 @@ export const registerSchema = z.object({
 });
 
 export const login_schema = z.object({
-    username: z.string().min(3).max(50).optional(),
-    email: z.string().email().optional(),
+    identifier: z.string().min(3).max(50),
     password: z.string().min(8).max(50)
 });
 
 export const projetSchema = z.object({
     title: z.string().min(3).max(50),
     description: z.string().max(512),
-    owner_id: z.string().uuid()
+    ownerId: z.string().uuid()
 });
 
 export const tasksSchema = z.object({
@@ -55,7 +54,7 @@ export interface Project {
 
 export interface Task {
     id: UUID;
-    project_id: UUID;
+    projectId: UUID;
     title: string;
     description: string;
     statut: Task_Status;

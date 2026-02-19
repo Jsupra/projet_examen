@@ -38,10 +38,20 @@ export const insertRefreshToken = async (user_id: string, token: string) => {
     }
 }
 
-
-export const findUserByEmail_UserName = async (email?: string, username?: string): Promise<User | null> => {
+export const deleteRefreshToken = async (user_id: string) => {
     try {
-        const result = await db.query(`SELECT * FROM users WHERE email = $1 OR username = $2`, [email || null, username || null]);
+        const result = await db.query(`DELETE FROM refresh_tokens WHERE user_id = $1`, [user_id]);
+        return result.rows[0];
+    } catch (err) {
+        console.error("Error deleting refresh token: ", err);
+        return null;
+    }
+}
+
+// function pour trouver un utilisateur par email ou username
+export const findUserByEmail_UserName = async (identifier: string): Promise<User | null> => {
+    try {
+        const result = await db.query(`SELECT * FROM users WHERE email = $1 OR username = $1`, [identifier]);
         if (result.rows.length === 0) {
             return null;
         }
@@ -52,6 +62,19 @@ export const findUserByEmail_UserName = async (email?: string, username?: string
     }
 }
 
+// function pour verifier l'existence de l'utilisateur
+export const checkUserExistence = async ( email: string, username: string ) => {
+    try {
+        const result = await db.query(`SELECT * FROM users WHERE email = $1 OR username = $2`, [email, username]);
+        if (result.rows.length === 0) {
+            return null;
+        }
+        return result.rows[0];
+    } catch (err) {
+        console.error('Error checking user existence:', err);
+        return null
+    }
+}
 
 
 
