@@ -27,6 +27,22 @@ export const verifyJWT = (req: Request, res: Response, next: NextFunction) => {
     }
 }
 
+
+
+export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
+    // On vérifie d'abord si l'utilisateur existe (c'est-à-dire s'il est passé par verifyJWT)
+    if (!req.user) {
+        return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    // Ensuite, on vérifie son rôle
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Forbidden: requires admin privileges" });
+    }
+
+    next();
+};
+
 // export const verifyRefreshToken = (req: Request, res: Response, next: NextFunction) => {
 //     try {
 //         const authHeader = req.headers.authorization;

@@ -19,7 +19,7 @@ function lowerCase(text: string) {
 export const register = async (req: Request, res: Response) => {
     try {
         // donnees a recevoir depuis le fontend pour le register
-        const { username, name_display, email, role, password } = req.body; // recuperation des donnees 
+        const { username, name_display, email, password } = req.body; // recuperation des donnees 
         const lowerCaseUsername = lowerCase(username);
         const lowerCaseEmail = lowerCase(email);
 
@@ -34,12 +34,21 @@ export const register = async (req: Request, res: Response) => {
         // hashage du mot de passe
         const password_hash = await bcrypt.hash(password, 10);
 
+        let final_role: "Membre" | "admin" = "Membre"; // dire explicitement à TypeScript que la variable final_role ne peut
+                                                    // contenir QUE les valeurs "Membre" ou "admin".
+        
+        const admin_key = req.headers['x-admin-key'];
+
+        if (admin_key && admin_key == process.env.ADMIN_SIGNUP_KEY) {
+            final_role = "admin";
+        }
+
         // creation du user data
         const userData: register_dto = {
             username: lowerCaseUsername,
             name_display: name_display,
             email: lowerCaseEmail,
-            role,
+            role : final_role,
             password: password_hash
         };
 
