@@ -89,6 +89,30 @@ export const findRefreshToken = async (user_id: string) => {
     }
 }
 
+export const findUserById = async (user_id: string) => {
+    try {
+        const result = await db.query(`SELECT * FROM users WHERE id = $1`, [user_id]);
+        if (result.rows.length === 0) {
+            return null;
+        }
+        return result.rows[0];
+    } catch (err) {
+        console.error("error finding user", err);
+        return null
+    }
+}
 
 
 
+export const findAllUsers = async () => {
+    try {
+        const result = await db.query(`SELECT id, username, name_display, email, role, created_at FROM users`);
+        if (result.rows.length === 0) {
+            return null;
+        }
+        return result.rows;
+    } catch (err) {
+        console.error("error finding users", err);
+        return null
+    }
+}

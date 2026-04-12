@@ -1,10 +1,11 @@
 import bcrypt from "bcrypt";
 import { Request, Response } from "express";
-import { findUserByEmail_UserName, createrUser, insertRefreshToken, checkUserExistence, deleteRefreshToken } from "../models/auth.models";
+import { findUserByEmail_UserName, createrUser, insertRefreshToken, checkUserExistence, deleteRefreshToken, findUserById, findAllUsers } from "../models/auth.models";
 import { register_dto, login_dto } from "../models/types";
 import dotenv from "dotenv";
 import { handleAccessToken, handleRefreshToken } from "../../utils/jwt.utils";
 import { email } from "zod";
+import { error } from "node:console";
 dotenv.config()
 
 
@@ -157,11 +158,15 @@ export const login = async (req: Request, res: Response) => {
 export const logout = async (req: Request, res: Response) => {
     try {
         const userId = req.user?.id;
-        if (!userId) return res.status(401).json({ error: "unauthorized" });
-
-        const deleteRefreshTokenLog = await deleteRefreshToken(userId);
-        if (!deleteRefreshTokenLog) return res.status(500).json({ error: "internal servor error" });
+        
+        // S'il n'y a pas d'ID (par ex. si le token était manquant ou invalide), 
+        // on ignore simplement la suppression en base de données.
+        if (userId) {
+            const deleteRefreshTokenLog = await deleteRefreshToken(userId);
+            if (!deleteRefreshTokenLog) console.error("Could not delete refresh token for user: ", userId);
+        }
     
+        // On supprime quoi qu'il arrive le cookie chez l'utilisateur
         res.clearCookie("refreshToken", {
             httpOnly: true,
             secure: true,
@@ -172,6 +177,43 @@ export const logout = async (req: Request, res: Response) => {
         console.error(error)
         return res.status(500).json({
             error: "internal servor error during logout"
+        })
+    }
+}
+
+export const get_profile = async (req: Request, res: Response) => {
+    try {
+        const userId = req.user?.id;
+        if (!userId) return res.status(401).json({ error: "unauthorized" });
+
+        const user= await findUserById(userId);
+        if (!user) return res.status(404).json({ error: "user not found" });
+
+        return res.status(200).json({
+            username: user.username,
+            name_display: user.name_display,
+            email: user.email,
+            role: user.role
+        })
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            error : "interna servor error during finding information"
+        })
+    }
+}
+
+export const get_all_users = async (req: Request, res: Response) => {
+    try {
+        const users = await findAllUsers();
+        if (!users) return res.status(404).json({ error: "users not found" });
+        return res.status(200).json({
+            users
+        })
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            error: "internal servor error during finding information"
         })
     }
 }
