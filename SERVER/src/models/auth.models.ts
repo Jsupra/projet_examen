@@ -40,8 +40,8 @@ export const insertRefreshToken = async (user_id: string, token: string) => {
 
 export const deleteRefreshToken = async (user_id: string) => {
     try {
-        const result = await db.query(`DELETE FROM refresh_tokens WHERE user_id = $1`, [user_id]);
-        return result.rows[0];
+        await db.query(`DELETE FROM refresh_tokens WHERE user_id = $1`, [user_id]);
+        return true;
     } catch (err) {
         console.error("Error deleting refresh token: ", err);
         return null;
@@ -75,6 +75,20 @@ export const checkUserExistence = async ( email: string, username: string ) => {
         return null
     }
 }
+
+export const findRefreshToken = async (user_id: string) => {
+    try {
+        const result = await db.query(`SELECT * FROM refresh_tokens WHERE user_id = $1`, [user_id]);
+        if (result.rows.length === 0) {
+            return null;
+        }
+        return result.rows[0];
+    } catch (err) {
+        console.error('Error finding refresh token:', err);
+        return null;
+    }
+}
+
 
 
 

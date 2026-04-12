@@ -145,6 +145,29 @@ export const login = async (req: Request, res: Response) => {
 }
 
 
+export const logout = async (req: Request, res: Response) => {
+    try {
+        const userId = req.user?.id;
+        if (!userId) return res.status(401).json({ error: "unauthorized" });
+
+        const deleteRefreshTokenLog = await deleteRefreshToken(userId);
+        if (!deleteRefreshTokenLog) return res.status(500).json({ error: "internal servor error" });
+    
+        res.clearCookie("refreshToken", {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'strict',
+        });
+        return res.status(200).json({ message: "Logout success" });
+    } catch (error) {
+        console.error(error)
+        return res.status(500).json({
+            error: "internal servor error during logout"
+        })
+    }
+}
+
+
 // export const getHashByIdentifier = async (req: Request, res: Response) => {
 //     try {
 //         const { identifier } = req.body;
