@@ -4,8 +4,6 @@ import { findUserByEmail_UserName, createrUser, insertRefreshToken, checkUserExi
 import { register_dto, login_dto } from "../models/types";
 import dotenv from "dotenv";
 import { handleAccessToken, handleRefreshToken } from "../../utils/jwt.utils";
-import { email } from "zod";
-import { error } from "node:console";
 dotenv.config()
 
 
@@ -217,24 +215,3 @@ export const get_all_users = async (req: Request, res: Response) => {
         })
     }
 }
-
-
-// export const getHashByIdentifier = async (req: Request, res: Response) => {
-//     try {
-//         const { identifier } = req.body;
-//         const user = await findUserByEmail_UserName(identifier);
-//         if (!user) {
-//             return res.status(404).json({
-//                 error: "user not found"
-//             })
-//         }
-//         return res.status(200).json({
-//            user
-//         })
-//     } catch (error) {
-//         console.error(error)
-//         return res.status(500).json({
-//             error: "internal servor error"
-//         })
-//     }
-// };

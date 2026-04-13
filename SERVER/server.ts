@@ -6,6 +6,7 @@ import cors from "cors";
 import db from "./src/config/database";
 import authRoutes from "./src/routes/auth.routes";
 import userRoutes from "./src/routes/profile.routes";
+import projectRoutes from "./src/routes/projet.routes";
 import setupDb from "./src/config/dbInit";
 
 // Models
@@ -27,6 +28,7 @@ app.get("/", (req: Request, res: Response) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/project", projectRoutes);
 
 
 // --- Server startup ---
