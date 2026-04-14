@@ -7,7 +7,7 @@ const router = express.Router();
 
 
 router.get("/profile", verifyJWT, get_profile);
-router.get("/all_users", verifyJWT, isAdmin, get_all_users);
+router.get("/all_users", verifyJWT, isAdmin, get_all_users); //permettant aux admins de voir tout les utilisateurs inscrits
 
 
 export default router;
