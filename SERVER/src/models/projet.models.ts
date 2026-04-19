@@ -1,4 +1,5 @@
 import db from "../config/database";
+import { Task_Status } from "./types";
 
 
 
@@ -93,4 +94,38 @@ export const deleteProjectInDb = async (projectId: string, userId: string) => {
         console.error("Error deleting project", err);
         throw err;
     }
+};
+
+
+export const insertTask = async (
+    projectId: string, 
+    title: string, 
+    description: string, 
+    assignedTo: string, 
+    echeance: Date
+) => {
+    try {
+        const query = `
+            INSERT INTO tasks (project_id, title, description, assigned_to, echeance)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING *;
+        `;
+        const result = await db.query(query, [projectId, title, description, assignedTo, echeance]);
+        return result.rows[0];
+    } catch (err) {
+        console.error("Error inserting task", err);
+        throw err;
+    }
+};
+
+
+export const updateTaskStatus = async (taskId: string, newStatus: Task_Status) => {
+    const query = `
+        UPDATE tasks 
+        SET statut = $1 
+        WHERE id = $2 
+        RETURNING *;
+    `;
+    const result = await db.query(query, [newStatus, taskId]);
+    return result.rows[0];
 };
