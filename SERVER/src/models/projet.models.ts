@@ -120,12 +120,76 @@ export const insertTask = async (
 
 
 export const updateTaskStatus = async (taskId: string, newStatus: Task_Status) => {
-    const query = `
-        UPDATE tasks 
-        SET statut = $1 
-        WHERE id = $2 
-        RETURNING *;
-    `;
-    const result = await db.query(query, [newStatus, taskId]);
-    return result.rows[0];
+    try {
+        const query = `
+            UPDATE tasks 
+            SET statut = $1 
+            WHERE id = $2 
+            RETURNING *;
+        `;
+        const result = await db.query(query, [newStatus, taskId]);
+        return result.rows[0];
+    } catch (err) {
+        console.error("Error updating task status", err);
+        throw err;
+    }
+};
+
+
+
+// export const getProjectByIdInDb = async (projectId: string, userId: string) => {
+//     const query = `
+//         SELECT p.*, 
+//                COALESCE(JSON_AGG(t.*) FILTER (WHERE t.id IS NOT NULL), '[]') AS tasks
+//         FROM projects p
+//         LEFT JOIN tasks t ON p.id = t.project_id
+//         WHERE p.id = $1 AND p.owner_id = $2
+//         GROUP BY p.id;
+//     `;
+
+//     /* LEFT JOIN : Permet d'afficher le projet même s'il n'a pas encore de tâches.
+//     JSON_AGG : Rassemble toutes les tâches du projet dans un tableau.
+//     COALESCE(..., '[]') : Si le projet n'a pas de tâches, cela renvoie un tableau vide [] au lieu de null. */
+//     const result = await db.query(query, [projectId, userId]);
+//     return result.rows[0];
+// };
+
+
+
+export const getProjectByIdInDb = async (projectId: string, userId: string) => {
+    try {
+        const query = `
+            SELECT 
+                p.id, 
+                p.title, 
+                p.description, 
+                p.owner_id,
+                p.created_at,
+                p.updated_at,
+                COALESCE(
+                    JSON_AGG(
+                        JSON_BUILD_OBJECT(
+                            'id', t.id,
+                            'title', t.title,
+                            'description', t.description,
+                            'statut', t.statut,
+                            'echeance', t.echeance,
+                            'assigned_to', u.id,
+                            'assigned_to_name', u.name_display
+                        )
+                    ) FILTER (WHERE t.id IS NOT NULL), 
+                    '[]'
+                ) AS tasks
+            FROM projects p
+            LEFT JOIN tasks t ON p.id = t.project_id
+            LEFT JOIN users u ON t.assigned_to = u.id
+            WHERE p.id = $1 AND p.owner_id = $2
+            GROUP BY p.id;
+        `;
+        const result = await db.query(query, [projectId, userId]);
+        return result.rows[0];
+    } catch (err) {
+        console.error("Error getting project by id", err);
+        throw err;
+    }
 };

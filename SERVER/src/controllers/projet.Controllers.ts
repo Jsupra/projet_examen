@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 import { Request, Response } from "express";
-import { insertProject, getProjectsWithPagination, updateProjectInDb, deleteProjectInDb, insertTask, updateTaskStatus } from "../models/projet.models";
+import { insertProject, getProjectsWithPagination, updateProjectInDb, deleteProjectInDb, insertTask, updateTaskStatus, getProjectByIdInDb } from "../models/projet.models";
 import db from "../config/database";
 
 export const createProject = async (req: Request, res: Response) => {
@@ -184,6 +184,25 @@ export const change_task_status = async (req: Request, res: Response) => {
         // 3. Mise à jour
         const updatedTask = await updateTaskStatus(taskId, statut);
         return res.status(200).json(updatedTask);
+    } catch (error) {
+        return res.status(500).json({ error: "Erreur serveur" });
+    }
+};
+
+
+
+export const get_project_details = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params as {id: string};
+        const userId = req.user?.id;
+
+        const project = await getProjectByIdInDb(id, userId as string);
+
+        if (!project) {
+            return res.status(404).json({ error: "Projet introuvable" });
+        }
+
+        return res.status(200).json(project);
     } catch (error) {
         return res.status(500).json({ error: "Erreur serveur" });
     }
