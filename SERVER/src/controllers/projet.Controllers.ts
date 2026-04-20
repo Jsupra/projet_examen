@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 import { Request, Response } from "express";
-import { insertProject, getProjectsWithPagination, updateProjectInDb, deleteProjectInDb, insertTask, updateTaskStatus, getProjectByIdInDb } from "../models/projet.models";
+import { insertProject, getProjectsWithPagination, updateProjectInDb, deleteProjectInDb, insertTask, updateTaskStatus, getProjectByIdInDb, getFilteredTasks } from "../models/projet.models";
 import db from "../config/database";
 
 export const createProject = async (req: Request, res: Response) => {
@@ -52,9 +52,10 @@ export const findAllUsersAllProjects = async (req: Request, res: Response) => {
         // On récupère les paramètres de l'URL, avec des valeurs par défaut
         const page = parseInt(req.query.page as string) || 1;
         const limit = parseInt(req.query.limit as string) || 10;
+        const search = req.query.search as string;
         const offset = (page - 1) * limit;
 
-        const { projects, total } = await getProjectsWithPagination(userId, limit, offset);
+        const { projects, total } = await getProjectsWithPagination(userId, limit, offset, search);
 
         return res.status(200).json({
             message: "projects fetched successfully",
@@ -203,6 +204,37 @@ export const get_project_details = async (req: Request, res: Response) => {
         }
 
         return res.status(200).json(project);
+    } catch (error) {
+        return res.status(500).json({ error: "Erreur serveur" });
+    }
+};
+
+
+export const list_project_tasks = async (req: Request, res: Response) => {
+    try {
+        const { projectId } = req.params;
+        const statut = (req.query.statut || req.query.status) as string; // Accepte les deux pour éviter les erreurs de frappe
+        const search = req.query.search as string;
+        const userId = req.user?.id;
+
+        // 1. Sécurité : Vérifier si l'utilisateur a accès au projet
+        const accessCheck = await db.query(
+            "SELECT id FROM projects WHERE id = $1 AND owner_id = $2",
+            [projectId, userId]
+        );
+
+        if (accessCheck.rows.length === 0) {
+            return res.status(403).json({ error: "Accès refusé" });
+        }
+
+        // 2. Récupération des tâches filtrées
+        const tasks = await getFilteredTasks(
+            projectId as string, 
+            statut as string, 
+            search as string
+        );
+
+        return res.status(200).json(tasks);
     } catch (error) {
         return res.status(500).json({ error: "Erreur serveur" });
     }

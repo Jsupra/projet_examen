@@ -3,10 +3,6 @@ import db from "../config/database";
 import { Result } from "pg";
 
 
-//ICI LA MODIFICATION N'A PAS ENCORE ETE FAITE
-
-
-
 export const createrUser =async (user: register_dto): Promise<User | null> => {
     
     let {

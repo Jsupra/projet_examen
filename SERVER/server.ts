@@ -4,9 +4,7 @@ dotenv.config();
 import express, { Request, Response } from "express";
 import cors from "cors";
 import db from "./src/config/database";
-import authRoutes from "./src/routes/auth.routes";
-import userRoutes from "./src/routes/profile.routes";
-import projectRoutes from "./src/routes/projet.routes";
+import apiRoutes from "./src/routes/index";
 import setupDb from "./src/config/dbInit";
 
 // Models
@@ -26,9 +24,7 @@ app.get("/", (req: Request, res: Response) => {
     res.send("API opérationnelle");
 });
 
-app.use("/api/auth", authRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/project", projectRoutes);
+app.use("/api", apiRoutes);
 
 
 // --- Server startup ---

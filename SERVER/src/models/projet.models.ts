@@ -35,22 +35,29 @@ export const insertProject = async (title: string, description: string, userId: 
 // }
 
 
-export const getProjectsWithPagination = async (userId: string, limit: number, offset: number) => {
+export const getProjectsWithPagination = async (userId: string, limit: number, offset: number, search?: string) => {
     try {
-        // 1. On récupère les projets pour la page actuelle
+        const searchTerm = search ? `%${search}%` : null;
+
+        // 1. On récupère les projets filtrés pour la page actuelle
         const dataQuery = `
             SELECT * FROM projects 
             WHERE owner_id = $1 
+              AND ($4::text IS NULL OR title ILIKE $4)
             ORDER BY created_at DESC 
             LIMIT $2 OFFSET $3;
         `;
         
-        // 2. On compte le total pour que le frontend sache combien de pages il y a
-        const countQuery = `SELECT COUNT(*) FROM projects WHERE owner_id = $1;`;
+        // 2. On compte le total filtré pour la pagination
+        const countQuery = `
+            SELECT COUNT(*) FROM projects 
+            WHERE owner_id = $1 
+              AND ($2::text IS NULL OR title ILIKE $2);
+        `;
 
         const [dataRes, countRes] = await Promise.all([
-            db.query(dataQuery, [userId, limit, offset]),
-            db.query(countQuery, [userId])
+            db.query(dataQuery, [userId, limit, offset, searchTerm]),
+            db.query(countQuery, [userId, searchTerm])
         ]);
 
         return {
@@ -190,6 +197,29 @@ export const getProjectByIdInDb = async (projectId: string, userId: string) => {
         return result.rows[0];
     } catch (err) {
         console.error("Error getting project by id", err);
+        throw err;
+    }
+};
+
+
+export const getFilteredTasks = async (projectId: string, status?: string, search?: string) => {
+    try {
+        const query = `
+            SELECT t.*, u.name_display AS assigned_to_name
+            FROM tasks t
+            LEFT JOIN users u ON t.assigned_to = u.id
+            WHERE t.project_id = $1
+              AND ($2::text IS NULL OR t.statut = $2::Task_Statut)
+              AND ($3::text IS NULL OR t.title ILIKE $3)
+            ORDER BY t.echeance ASC;
+        `;
+        
+        const searchTerm = search ? `%${search}%` : null;
+        
+        const result = await db.query(query, [projectId, status || null, searchTerm]);
+        return result.rows;
+    } catch (err) {
+        console.error("Error getting filtered tasks", err);
         throw err;
     }
 };

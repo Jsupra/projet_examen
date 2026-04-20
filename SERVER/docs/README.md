@@ -1,6 +1,6 @@
-# Projet Examen - Application Blog
+# Projet Examen - Gestionnaire de Projets
 
-Cette application est un système de blog dynamique permettant la gestion des utilisateurs, l'authentification sécurisée et le partage d'articles.
+Cette application est une API de gestion de projets et de tâches, permettant la création de projets, le suivi de tâches, et une gestion collaborative sécurisée.
 
 ## 🚀 Technologies Utilisées
 
@@ -8,13 +8,13 @@ Cette application est un système de blog dynamique permettant la gestion des ut
 - **Node.js** & **Express** : Framework principal pour l'API.
 - **TypeScript** : Pour un typage fort et une meilleure maintenabilité.
 - **PostgreSQL** : Base de données relationnelle.
-- **JSON Web Tokens (JWT)** : Pour l'authentification et la sécurisation des routes.
-- **Bcrypt** : Hacage des mots de passe.
-- **Zod** : Validaton de schémas et de donnée.
-- **Dotenv**: Geston devariblesd'environnement.
+- **JSON Web Tokens (JWT)** : Authentification et sécurisation des routes.
+- **Bcrypt** : Hachage sécurisé des mots de passe.
+- **Zod** : Validation de schémas et de données.
+- **Dotenv**: Gestion des variables d'environnement.
 
 ### Frontend
-- (Placé dan le dosser `/CLIENT`) - À venir.
+- (Placé dans le dossier `/CLIENT`) - À venir.
 
 ---
 
@@ -22,63 +22,77 @@ Cette application est un système de blog dynamique permettant la gestion des ut
 
 ```text
 projet-examen/
-├── CLIENT/              # Code source du front-end (React/Vite...)
-├── SERVER/              # Code source du back-end (Exress/TS)
+├── CLIENT/              # Code source du front-end
+├── SERVER/              # Code source du back-end
 │   ├── src/
-│   │   ├── config/      # Configuration (DB, etc.)
-│   │   ├── controlers/ # Logiqumétier des routes
-│   │   ├── dataase/    # Schémas SQL et migrations
-│   │   ├── middlewares/ # Middlewares (Auth, validation)
-│   │   ├── models/      # Types TS et requêtes DB
-│   │   └── routes/      # Définition des points d'entrée d'API
-│   ├── server.ts        # Point d'entrée de l'appicatin
-│   └── tsconfi.json    # Configuration TypeScript
-└── README.md            # Documentationdu projet
+│   │   ├── config/      # Configuration (DB, Initialisation)
+│   │   ├── controllers/ # Logique métier (Auth, Projets)
+│   │   ├── database/    # Schémas SQL et migrations
+│   │   ├── middlewares/ # Authentification et rôles
+│   │   ├── models/      # Requêtes SQL et Types TS
+│   │   └── routes/      # Définition des points d'entrée (REST)
+│   ├── server.ts        # Point d'entrée de l'application
+│   └── tsconfig.json    # Configuration TypeScript
+└── README.md            # Documentation du projet
 ```
 
 ---
 
-## 🛠️ Instllation
+## 📡 API Endpoints
+
+Toutes les routes (sauf auth) nécessitent un Header `Authorization: Bearer <token>`.
+
+### Authentification (`/api/auth`)
+- `POST /register` : Créer un compte.
+- `POST /login` : Se connecter et recevoir un token.
+- `POST /logout` : Déconnexion.
+
+### Projets (`/api/projects`)
+- `GET /` : Lister ses projets (Supporte `?search=...`, `?page=1`, `?limit=10`).
+- `POST /` : Créer un nouveau projet.
+- `GET /:id` : Détails d'un projet (inclut toutes les tâches).
+- `PUT /:id` : Modifier un projet (Propriétaire uniquement).
+- `DELETE /:id` : Supprimer un projet.
+
+### Tâches
+- `GET /api/projects/:id/tasks` : Lister les tâches d'un projet avec filtres.
+    - Filtres : `?status=...` (A faire, En cours, Termine), `?search=...`
+- `POST /api/projects/:id/tasks` : Ajouter une tâche à un projet.
+- `PATCH /api/projects/tasks/:taskId/status` : Changer le statut d'une tâche.
+
+---
+
+## 🛠️ Installation
 
 ### Prérequis
 - [Node.js](https://nodejs.org/) (v18+)
-- [PostgreSQL](htts://www.ostgresq.org/) instllée confguré.
+- [PostgreSQL](https://www.postgresql.org/) installé et configuré.
 
-### Dépliement du Backed
+### Déploiement du Backend
 
-1. **Accédeza dossier server :**
+1. **Accédez au dossier server :**
    ```bash
    cd SERVER
    ```
 
-2. **Installez le dépendances :**
+2. **Installez les dépendances :**
    ```bash
-   npm nstall
+   npm install
    ```
 
-3. **Cofiurez les variables d'environnement :**
-   - Copiez le fichier `.env.example`n `.env` :
-     ```bash
-     cp .env.eamle .env
-     ```
-   - Modifiez le fichier `.env` avec vos infomations de connxion PotgreSQL.
+3. **Configurez les variables d'environnement :**
+   - Créez un fichier `.env` basé sur `.env.example`.
+   - Renseignez vos informations de connexion PostgreSQL.
 
-4. **Initialiez labse de donées :**
-   - Utilisez le fichier `src/atabase/schema.sql`our créer les tables nécessaires dans votre base PeSQL.
+4. **Initialisez la base de données :**
+   - Le schéma est chargé automatiquement au démarrage ou via `src/database/schema.sql`.
 
 ---
 
 ## 🏃 Scripts Disponibles
 
-Dans l dossier `ERVER` :
+Dans le dossier `SERVER` :
 
-- `npm run dev` : Lance le serveur de développement avec rechargement automatiue (Nodemon).
-- `npm run build` : Compile le projet TypeScript en JavaScript (dans eossier `dist`).
+- `npm run dev` : Lance le serveur avec rechargement automatique.
+- `npm run build` : Compile le projet TypeScript.
 - `npm run start` : Lance l'application compilée.
-
----
-
-## 🔐 Authentificion
-
-L'API utilise des tokens JWT pour sécuriser l'accès. Lors de la connexion, un token est généré et doit être inclus dns les en-têtes des requêtes protégée :
-`Authorization: Bearer <votre_token>
