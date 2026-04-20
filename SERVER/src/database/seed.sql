@@ -1,5 +1,7 @@
 
 DELETE FROM refresh_tokens;
+DELETE FROM project_members;
+DELETE FROM notifications;
 DELETE FROM tasks;
 DELETE FROM projects;
 DELETE FROM users;
@@ -7,8 +9,8 @@ DELETE FROM users;
 -- 2. Utilisateurs (Le mot de passe pour les deux est : password123)
 INSERT INTO users (username, name_display, email, role, password_hash)
 VALUES 
-('admin_jean', 'Jean Administrateur', 'admin@test.com', 'admin', '$2b$10$EPf9XpPyX.YIuLz0lT3tOeLp0O6kH2/iJIs3D.vL5rV.p8R1PzS9i'),
-('sophie_dev', 'Sophie Développeuse', 'sophie@test.com', 'Membre', '$2b$10$EPf9XpPyX.YIuLz0lT3tOeLp0O6kH2/iJIs3D.vL5rV.p8R1PzS9i');
+('admin_jean', 'Jean Administrateur', 'admin@test.com', 'admin', '$2b$10$UmCbqK9jn6dxm2T2g8LzeeFWKCSICRUrbZnRYLsjSkeDaj0KwyzrO'),
+('sophie_dev', 'Sophie Développeuse', 'sophie@test.com', 'Membre', '$2b$10$UmCbqK9jn6dxm2T2g8LzeeFWKCSICRUrbZnRYLsjSkeDaj0KwyzrO');
 
 
 INSERT INTO projects (title, description, owner_id)

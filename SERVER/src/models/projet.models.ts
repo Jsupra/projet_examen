@@ -39,20 +39,23 @@ export const getProjectsWithPagination = async (userId: string, limit: number, o
     try {
         const searchTerm = search ? `%${search}%` : null;
 
-        // 1. On récupère les projets filtrés pour la page actuelle
+        // 1. On récupère les projets filtrés (créés ou rejoints) pour la page actuelle
         const dataQuery = `
-            SELECT * FROM projects 
-            WHERE owner_id = $1 
-              AND ($4::text IS NULL OR title ILIKE $4)
-            ORDER BY created_at DESC 
+            SELECT p.* FROM projects p
+            LEFT JOIN project_members pm ON p.id = pm.project_id
+            WHERE (p.owner_id = $1 OR pm.user_id = $1)
+              AND ($4::text IS NULL OR p.title ILIKE $4)
+            GROUP BY p.id
+            ORDER BY p.created_at DESC 
             LIMIT $2 OFFSET $3;
         `;
         
-        // 2. On compte le total filtré pour la pagination
+        // 2. On compte le total filtré pour la pagination (COUNT DISTINCT pour éviter les doublons)
         const countQuery = `
-            SELECT COUNT(*) FROM projects 
-            WHERE owner_id = $1 
-              AND ($2::text IS NULL OR title ILIKE $2);
+            SELECT COUNT(DISTINCT p.id) FROM projects p
+            LEFT JOIN project_members pm ON p.id = pm.project_id
+            WHERE (p.owner_id = $1 OR pm.user_id = $1)
+              AND ($2::text IS NULL OR p.title ILIKE $2);
         `;
 
         const [dataRes, countRes] = await Promise.all([
@@ -243,3 +246,52 @@ export const getProjectStatsInDb = async (projectId: string) => {
     return result.rows[0];
 };
 
+
+
+export const inviteMemberToProject = async (projectId: string, targetUserId: string, inviterName: string) => {
+    const client = await db.connect(); // On utilise un client pour la transaction
+    try {
+        await client.query('BEGIN');
+
+        // 1. Ajouter le membre
+        const memberQuery = `
+            INSERT INTO project_members (project_id, user_id, role)
+            VALUES ($1, $2, 'membre')
+            ON CONFLICT DO NOTHING
+            RETURNING *;
+        `;
+        const memberRes = await client.query(memberQuery, [projectId, targetUserId]);
+
+        // 2. Créer la notification
+        const notifQuery = `
+            INSERT INTO notifications (user_id, content, type)
+            VALUES ($1, $2, 'invitation');
+        `;
+        const notifContent = `${inviterName} vous a invité à collaborer sur un projet.`;
+        await client.query(notifQuery, [targetUserId, notifContent]);
+
+        await client.query('COMMIT');
+        return memberRes.rows[0];
+    } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+    } finally {
+        client.release();
+    }
+};
+
+export const getUserProjectsInDb = async (userId: string) => {
+    try {
+        const query = `
+            SELECT p.* FROM projects p
+            LEFT JOIN project_members pm ON p.id = pm.project_id
+            WHERE p.owner_id = $1 OR pm.user_id = $1
+            GROUP BY p.id;
+        `;
+        const result = await db.query(query, [userId]);
+        return result.rows;
+    } catch (err) {
+        console.error("Error getting user projects", err);
+        throw err;
+    }
+};

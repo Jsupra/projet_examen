@@ -1,5 +1,5 @@
 import express from "express";
-import { createProject, findAllUsersAllProjects, modify_project, remove_project, create_task, change_task_status, get_project_details, list_project_tasks, get_project_stats } from "../controllers/projet.Controllers";
+import { createProject, findAllUsersAllProjects, modify_project, remove_project, create_task, change_task_status, get_project_details, list_project_tasks, get_project_stats, invite_member } from "../controllers/projet.Controllers";
 import { verifyJWT } from "../middlewares/authenticationToken.middlewares";
 
 
@@ -19,6 +19,7 @@ router.patch('/tasks/:taskId/status', verifyJWT, change_task_status); // Modifie
 router.get('/:projectId/tasks', verifyJWT, list_project_tasks); // Route pour lister les tâches avec filtres optionnels
 
 router.get('/:projectId/stats', verifyJWT, get_project_stats);
+router.post('/:projectId/members', verifyJWT, invite_member);
 
 
 

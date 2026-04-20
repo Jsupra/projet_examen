@@ -1,6 +1,9 @@
 import dotenv from "dotenv";
 import { Request, Response } from "express";
-import { insertProject, getProjectsWithPagination, updateProjectInDb, deleteProjectInDb, insertTask, updateTaskStatus, getProjectByIdInDb, getFilteredTasks, getProjectStatsInDb } from "../models/projet.models";
+import {
+    insertProject, getProjectsWithPagination, updateProjectInDb, deleteProjectInDb, insertTask,
+    updateTaskStatus, getProjectByIdInDb, getFilteredTasks, getProjectStatsInDb, inviteMemberToProject
+} from "../models/projet.models";
 import db from "../config/database";
 
 export const createProject = async (req: Request, res: Response) => {
@@ -24,25 +27,6 @@ export const createProject = async (req: Request, res: Response) => {
     }
     
 }
-
-// export const findAllUsersAllProjects = async (req: Request, res: Response) => {
-//     try {
-//         const userId = req.user?.id; 
-//         if (!userId) return res.status(401).json({ error: "unauthorized : user ID missing" });
-
-//         const projects = await getProjectsWithPagination(userId);
-        
-//         return res.status(200).json({ 
-//             message: "projects fetched successfully", 
-//             count: projects.length, // Pratique pour le frontend
-//             projects: projects 
-//         });
-        
-//     } catch (error) {
-//         console.error(error);
-//         return res.status(500).json({ error: "internal server error" });
-//     }
-// };
 
 export const findAllUsersAllProjects = async (req: Request, res: Response) => {
     try {
@@ -265,5 +249,31 @@ export const get_project_stats = async (req: Request, res: Response) => {
         return res.status(200).json(stats);
     } catch (error) {
         return res.status(500).json({ error: "Erreur serveur" });
+    }
+};
+
+
+export const invite_member = async (req: Request, res: Response) => {
+    try {
+        const projectId = req.params.projectId as string;
+        const targetUserId = req.body.targetUserId as string; // L'ID récupéré via la recherche
+        const ownerId = req.user?.id as string;
+        const inviterName = req.user?.username as string; // On utilise username car name_display n'est pas dans le JWT
+
+        // Sécurité : Est-ce bien le propriétaire du projet ?
+        const projectCheck = await db.query(
+            "SELECT id FROM projects WHERE id = $1 AND owner_id = $2",
+            [projectId, ownerId]
+        );
+
+        if (projectCheck.rows.length === 0) {
+            return res.status(403).json({ error: "Seul le propriétaire peut inviter des membres" });
+        }
+
+        const result = await inviteMemberToProject(projectId, targetUserId, inviterName);
+        
+        return res.status(201).json({ message: "Invitation envoyée et membre ajouté", result });
+    } catch (error) {
+        return res.status(500).json({ error: "Erreur lors de l'invitation" });
     }
 };
