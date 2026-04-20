@@ -223,3 +223,23 @@ export const getFilteredTasks = async (projectId: string, status?: string, searc
         throw err;
     }
 };
+
+
+export const getProjectStatsInDb = async (projectId: string) => {
+    const query = `
+        SELECT 
+            COUNT(*) as total_tasks,
+            COUNT(*) FILTER (WHERE statut = 'A faire') as todo_count,
+            COUNT(*) FILTER (WHERE statut = 'En cours') as doing_count,
+            COUNT(*) FILTER (WHERE statut = 'Termine') as done_count,
+            CASE 
+                WHEN COUNT(*) > 0 THEN ROUND((COUNT(*) FILTER (WHERE statut = 'Termine')::float / COUNT(*)) * 100)
+                ELSE 0 
+            END as progress_percentage
+        FROM tasks
+        WHERE project_id = $1;
+    `;
+    const result = await db.query(query, [projectId]);
+    return result.rows[0];
+};
+

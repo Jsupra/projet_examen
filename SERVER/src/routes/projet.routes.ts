@@ -1,5 +1,5 @@
 import express from "express";
-import { createProject, findAllUsersAllProjects, modify_project, remove_project, create_task, change_task_status, get_project_details, list_project_tasks } from "../controllers/projet.Controllers";
+import { createProject, findAllUsersAllProjects, modify_project, remove_project, create_task, change_task_status, get_project_details, list_project_tasks, get_project_stats } from "../controllers/projet.Controllers";
 import { verifyJWT } from "../middlewares/authenticationToken.middlewares";
 
 
@@ -17,4 +17,9 @@ router.delete("/:id", verifyJWT, remove_project);    // Supprimer un projet
 router.post('/:projectId/tasks', verifyJWT, create_task);             // Ajouter une tâche à un projet
 router.patch('/tasks/:taskId/status', verifyJWT, change_task_status); // Modifier le statut d'une tâche
 router.get('/:projectId/tasks', verifyJWT, list_project_tasks); // Route pour lister les tâches avec filtres optionnels
+
+router.get('/:projectId/stats', verifyJWT, get_project_stats);
+
+
+
 export default router;

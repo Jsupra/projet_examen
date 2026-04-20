@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 import { Request, Response } from "express";
-import { insertProject, getProjectsWithPagination, updateProjectInDb, deleteProjectInDb, insertTask, updateTaskStatus, getProjectByIdInDb, getFilteredTasks } from "../models/projet.models";
+import { insertProject, getProjectsWithPagination, updateProjectInDb, deleteProjectInDb, insertTask, updateTaskStatus, getProjectByIdInDb, getFilteredTasks, getProjectStatsInDb } from "../models/projet.models";
 import db from "../config/database";
 
 export const createProject = async (req: Request, res: Response) => {
@@ -235,6 +235,34 @@ export const list_project_tasks = async (req: Request, res: Response) => {
         );
 
         return res.status(200).json(tasks);
+    } catch (error) {
+        return res.status(500).json({ error: "Erreur serveur" });
+    }
+};
+
+
+
+export const get_project_stats = async (req: Request, res: Response) => {
+    try {
+        // Correction ici : on s'assure que projectId est bien traité comme une string
+        const { projectId } = req.params as {projectId: string}; 
+        const userId = req.user?.id;
+        const userRole = req.user?.role;
+
+        if (!userId) return res.status(401).json({ error: "Non autorisé" });
+
+        // Vérification d'accès : Proprio ou Admin
+        const accessCheck = await db.query(
+            "SELECT id FROM projects WHERE id = $1 AND (owner_id = $2 OR $3 = 'admin')",
+            [projectId, userId, userRole]
+        );
+
+        if (accessCheck.rows.length === 0) {
+            return res.status(403).json({ error: "Accès refusé" });
+        }
+
+        const stats = await getProjectStatsInDb(projectId);
+        return res.status(200).json(stats);
     } catch (error) {
         return res.status(500).json({ error: "Erreur serveur" });
     }
