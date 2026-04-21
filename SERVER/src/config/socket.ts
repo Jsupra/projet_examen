@@ -15,7 +15,8 @@ export const initSocket = (httpServer: HttpServer) => {
 
     // --- MIDDLEWARE DE SÉCURITÉ JWT ---
     io.use((socket, next) => {
-        const token = socket.handshake.auth.token; // Le client doit envoyer { auth: { token: '...' } }
+        // On récupère le token soit dans auth (frontend propre) soit dans query (Postman/Test)
+        const token = socket.handshake.auth.token || socket.handshake.query.token; 
 
         if (!token) {
             return next(new Error("Authentication error: Token missing"));
