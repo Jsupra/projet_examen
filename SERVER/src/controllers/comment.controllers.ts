@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import db from "../config/database";
 import { addCommentInDb, getTaskCommentsFromDb } from "../models/comments.models";
 import { logActivity } from "./activity.controllers";
+import { io } from "../config/socket";
 
 
 // --- RÉCUPÉRER LES COMMENTAIRES ---
@@ -55,6 +56,14 @@ export const post_comment = async (req: Request, res: Response) => {
 
         // Log de commentaire
         await logActivity(project_id, userId, 'TASK_COMMENT', `a ajouté un commentaire sur la tâche "${title}"`);
+
+        // Notification Temps Réel
+        io.to(project_id).emit('new-comment', {
+            taskId,
+            author: req.user?.username,
+            content: content,
+            message: `Nouveau commentaire sur la tâche "${title}"`
+        });
 
         return res.status(201).json(comment);
     } catch (error) {

@@ -1,5 +1,6 @@
 
 import { Request, Response } from "express";
+import { io } from "../config/socket";
 import {
     insertProject, getProjectsWithPagination, updateProjectInDb, deleteProjectInDb, insertTask,
     updateTaskStatus, getProjectByIdInDb, getFilteredTasks, getProjectStatsInDb, inviteMemberToProject
@@ -182,6 +183,12 @@ export const change_task_status = async (req: Request, res: Response) => {
             'TASK_UPDATE', 
             `a changé le statut de la tâche "${title}" en "${statut}"`
         );
+        io.to(project_id).emit('task-updated', {
+            taskId,
+            newStatus: statut,
+            user: req.user?.username,
+            message: `La tâche "${title}" a été mise à jour.`
+        });
         
         return res.status(200).json(updatedTask);
 
@@ -303,6 +310,13 @@ export const invite_member = async (req: Request, res: Response) => {
         // On récupère le nom du nouvel utilisateur pour un log plus clair si on veut, 
         // mais pour l'instant on fait simple
         await logActivity(projectId, ownerId, 'MEMBER_ADD', `a ajouté un nouveau membre au projet`);
+
+        // Notification Temps Réel à l'utilisateur invité
+        io.to(targetUserId).emit('new-invitation', {
+            projectId,
+            inviterName,
+            message: `Vous avez été invité à rejoindre un nouveau projet par ${inviterName}.`
+        });
 
         return res.status(201).json({ message: "Invitation envoyée et membre ajouté", result });
     } catch (error) {

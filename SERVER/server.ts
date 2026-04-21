@@ -2,18 +2,20 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import express, { Request, Response } from "express";
+import { createServer } from "http";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import db from "./src/config/database";
 import apiRoutes from "./src/routes/index";
 import setupDb from "./src/config/dbInit";
-
-// Models
-
-
-
+import { initSocket } from "./src/config/socket";
 
 const app = express();
+const httpServer = createServer(app); // lier express au serveur HTTP
+
+// Initialisation de Socket.io
+initSocket(httpServer);
+
 const PORT = process.env.PORT || 3000;
 
 // --- Middlewares ---
@@ -38,11 +40,15 @@ const start_server = async () => {
         client.release();
 
         console.log('Tables initialization...');
-        setupDb(); //decommenter pour initialiser la bd   
+        // setupDb(); //decommenter pour initialiser la bd   
         console.log('Tables initialized successfully');
 
-        app.listen(PORT, () => {
-            console.log(`Server running on: http://localhost:${PORT}`);
+        // app.listen(PORT, () => {
+        //     console.log(`Server running on: http://localhost:${PORT}`);
+        // });
+
+        httpServer.listen(PORT, () => {
+            console.log(`Server is running on port ${PORT}`);
         });
 
     } catch (error) {
