@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import db from "../config/database";
 import { addCommentInDb, getTaskCommentsFromDb } from "../models/comments.models";
+import { logActivity } from "./activity.controllers";
 
 
 // --- RÉCUPÉRER LES COMMENTAIRES ---
@@ -37,7 +38,7 @@ export const post_comment = async (req: Request, res: Response) => {
 
         // Vérification de sécurité (Propriétaire ou Membre)
         const accessCheck = await db.query(
-            `SELECT t.id FROM tasks t
+            `SELECT t.id, t.project_id, t.title FROM tasks t
              JOIN projects p ON t.project_id = p.id
              LEFT JOIN project_members pm ON p.id = pm.project_id
              WHERE t.id = $1 AND (p.owner_id = $2 OR pm.user_id = $2)`,
@@ -48,7 +49,13 @@ export const post_comment = async (req: Request, res: Response) => {
             return res.status(403).json({ error: "Interdit de commenter cette tâche" });
         }
 
+        const { project_id, title } = accessCheck.rows[0];
+
         const comment = await addCommentInDb(taskId, userId, content);
+
+        // Log de commentaire
+        await logActivity(project_id, userId, 'TASK_COMMENT', `a ajouté un commentaire sur la tâche "${title}"`);
+
         return res.status(201).json(comment);
     } catch (error) {
         return res.status(500).json({ error: "Erreur lors de l'envoi du commentaire" });

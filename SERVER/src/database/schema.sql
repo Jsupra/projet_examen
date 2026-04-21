@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
 );
 
 -- Table pour les collaborateurs
-CREATE TABLE project_members (
+CREATE TABLE IF NOT EXISTS project_members (
     project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     role VARCHAR(20) DEFAULT 'membre', -- peut être 'membre' ou 'lecteur'
@@ -60,7 +60,7 @@ CREATE TABLE project_members (
 );
 
 -- Table pour les notifications
-CREATE TABLE notifications (
+CREATE TABLE IF NOT EXISTS notifications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
@@ -70,10 +70,21 @@ CREATE TABLE notifications (
 );
 
 
-CREATE TABLE task_comments (
+CREATE TABLE IF NOT EXISTS task_comments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     task_id UUID REFERENCES tasks(id) ON DELETE CASCADE,
     author_id UUID REFERENCES users(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- On supprime et on recrée l'historique car les colonnes ont changé
+DROP TABLE IF EXISTS activity_logs;
+CREATE TABLE activity_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    action_type VARCHAR(50) NOT NULL, -- ex: 'TASK_UPDATE', 'MEMBER_ADD', 'TASK_CREATE'
+    description TEXT NOT NULL,       -- ex: 'a changé le statut de "Faire le logo" à "Terminé"'
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

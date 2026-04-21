@@ -4,6 +4,7 @@ import {
     insertProject, getProjectsWithPagination, updateProjectInDb, deleteProjectInDb, insertTask,
     updateTaskStatus, getProjectByIdInDb, getFilteredTasks, getProjectStatsInDb, inviteMemberToProject
 } from "../models/projet.models";
+import { logActivity } from "./activity.controllers";
 import db from "../config/database";
 
 export const createProject = async (req: Request, res: Response) => {
@@ -17,6 +18,9 @@ export const createProject = async (req: Request, res: Response) => {
         
         const newProject = await insertProject(title, description, userId);
         if(!newProject) return res.status(500).json({ error: "internal server error" });
+
+        // Log de création
+        await logActivity(newProject.id, userId, 'PROJECT_CREATE', `a créé le projet "${title}"`);
 
         return res.status(201).json({ message: "project created successfully", project: newProject });
         
@@ -131,6 +135,9 @@ export const create_task = async (req: Request, res: Response) => {
         // Si c'veut dire que c'est bon, on appelle le service
         const newTask = await insertTask(projectId, title, description, assigned_to, echeance);
         
+        // Log de création de tâche
+        await logActivity(projectId, userId as string, 'TASK_CREATE', `a créé la tâche "${title}"`);
+
         return res.status(201).json(newTask);
     } catch (error) {
         return res.status(500).json({ error: "Erreur serveur" });
@@ -141,12 +148,12 @@ export const create_task = async (req: Request, res: Response) => {
 export const change_task_status = async (req: Request, res: Response) => {
     try {
         const { taskId } = req.params as { taskId: string };
-        const { statut } = req.body; // 'A faire', 'En cours' ou 'Termine'
-        const userId = req.user?.id;
+        const { statut } = req.body; 
+        const userId = req.user?.id as string;
 
-        // 1. On récupère la tâche pour savoir qui est le proprio du projet ET qui est assigné
+        // 1. On récupère les infos (on ajoute project_id et title à la requête)
         const checkQuery = `
-            SELECT t.assigned_to, p.owner_id 
+            SELECT t.assigned_to, t.project_id, t.title, p.owner_id 
             FROM tasks t
             JOIN projects p ON t.project_id = p.id
             WHERE t.id = $1
@@ -157,19 +164,29 @@ export const change_task_status = async (req: Request, res: Response) => {
             return res.status(404).json({ error: "Tâche introuvable" });
         }
 
-        const { assigned_to, owner_id } = taskCheck.rows[0];
+        const { assigned_to, owner_id, project_id, title } = taskCheck.rows[0];
 
-        // 2. Sécurité : Est-ce que l'utilisateur est le proprio, l'assigné ou l'admin ?
+        // 2. Sécurité
         const isAllowed = userId === owner_id || userId === assigned_to || req.user?.role === 'admin';
-
         if (!isAllowed) {
-            return res.status(403).json({ error: "Vous n'avez pas le droit de modifier cette tâche" });
+            return res.status(403).json({ error: "Interdit" });
         }
 
         // 3. Mise à jour
         const updatedTask = await updateTaskStatus(taskId, statut);
+        
+        // enregistre les modifs dans les logs
+        await logActivity(
+            project_id, 
+            userId, 
+            'TASK_UPDATE', 
+            `a changé le statut de la tâche "${title}" en "${statut}"`
+        );
+        
         return res.status(200).json(updatedTask);
+
     } catch (error) {
+        console.error(error);
         return res.status(500).json({ error: "Erreur serveur" });
     }
 };
@@ -282,8 +299,29 @@ export const invite_member = async (req: Request, res: Response) => {
 
         const result = await inviteMemberToProject(projectId, targetUserId, inviterName);
         
+        // Log d'invitation
+        // On récupère le nom du nouvel utilisateur pour un log plus clair si on veut, 
+        // mais pour l'instant on fait simple
+        await logActivity(projectId, ownerId, 'MEMBER_ADD', `a ajouté un nouveau membre au projet`);
+
         return res.status(201).json({ message: "Invitation envoyée et membre ajouté", result });
     } catch (error) {
         return res.status(500).json({ error: "Erreur lors de l'invitation" });
     }
+};
+
+
+
+// Contrôleur (à mettre dans projectController.ts)
+export const get_project_history = async (req: Request, res: Response) => {
+    const { projectId } = req.params;
+    const result = await db.query(
+        `SELECT al.*, u.name_display 
+         FROM activity_logs al
+         LEFT JOIN users u ON al.user_id = u.id
+         WHERE al.project_id = $1
+         ORDER BY al.created_at DESC LIMIT 50`,
+        [projectId]
+    );
+    res.json(result.rows);
 };

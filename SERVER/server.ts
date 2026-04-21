@@ -38,7 +38,7 @@ const start_server = async () => {
         client.release();
 
         console.log('Tables initialization...');
-        // setupDb(); //decommenter pour initialiser la bd   
+        setupDb(); //decommenter pour initialiser la bd   
         console.log('Tables initialized successfully');
 
         app.listen(PORT, () => {

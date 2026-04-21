@@ -267,3 +267,4 @@ export const getUserProjectsInDb = async (userId: string) => {
         throw err;
     }
 };
+
