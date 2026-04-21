@@ -5,6 +5,7 @@ import {
     insertProject, getProjectsWithPagination, updateProjectInDb, deleteProjectInDb, insertTask,
     updateTaskStatus, getProjectByIdInDb, getFilteredTasks, getProjectStatsInDb, inviteMemberToProject
 } from "../models/projet.models";
+import { createNotification } from "../models/notification.models";
 import { logActivity } from "./activity.controllers";
 import db from "../config/database";
 
@@ -183,11 +184,29 @@ export const change_task_status = async (req: Request, res: Response) => {
             'TASK_UPDATE', 
             `a changé le statut de la tâche "${title}" en "${statut}"`
         );
+
+        // Notification Persistante (Base de données)
+        const membersResult = await db.query(
+            "SELECT user_id FROM project_members WHERE project_id = $1 AND user_id != $2",
+            [project_id, userId]
+        );
+        const ownerResult = await db.query(
+            "SELECT owner_id FROM projects WHERE id = $1 AND owner_id != $2",
+            [project_id, userId]
+        );
+        const recipients = new Set([...membersResult.rows.map(r => r.user_id), ...ownerResult.rows.map(r => r.owner_id)]);
+        const notifContent = `La tâche "${title}" est passée en "${statut}" (par ${req.user?.username})`;
+        
+        for (const recipientId of recipients) {
+            await createNotification(recipientId, notifContent, 'TASK_UPDATE');
+        }
+
+        // Notification Temps Réel (Socket)
         io.to(project_id).emit('task-updated', {
             taskId,
             newStatus: statut,
             user: req.user?.username,
-            message: `La tâche "${title}" a été mise à jour.`
+            message: notifContent
         });
         
         return res.status(200).json(updatedTask);
@@ -312,10 +331,16 @@ export const invite_member = async (req: Request, res: Response) => {
         await logActivity(projectId, ownerId, 'MEMBER_ADD', `a ajouté un nouveau membre au projet`);
 
         // Notification Temps Réel à l'utilisateur invité
+        const notifContent = `Vous avez été invité à rejoindre un nouveau projet par ${inviterName}.`;
+        
+        // 1. Sauvegarde en Base de données (Persistant)
+        await createNotification(targetUserId, notifContent, 'INVITATION');
+
+        // 2. Envoi Temps Réel (Socket)
         io.to(targetUserId).emit('new-invitation', {
             projectId,
             inviterName,
-            message: `Vous avez été invité à rejoindre un nouveau projet par ${inviterName}.`
+            message: notifContent
         });
 
         return res.status(201).json({ message: "Invitation envoyée et membre ajouté", result });

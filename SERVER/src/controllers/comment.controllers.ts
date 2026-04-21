@@ -3,6 +3,7 @@ import db from "../config/database";
 import { addCommentInDb, getTaskCommentsFromDb } from "../models/comments.models";
 import { logActivity } from "./activity.controllers";
 import { io } from "../config/socket";
+import { createNotification } from "../models/notification.models";
 
 
 // --- RÉCUPÉRER LES COMMENTAIRES ---
@@ -57,12 +58,30 @@ export const post_comment = async (req: Request, res: Response) => {
         // Log de commentaire
         await logActivity(project_id, userId, 'TASK_COMMENT', `a ajouté un commentaire sur la tâche "${title}"`);
 
-        // Notification Temps Réel
+        // Notification Persistante (Base de données)
+        // 1. Récupérer les membres du projet pour les notifier (sauf l'auteur)
+        const membersResult = await db.query(
+            "SELECT user_id FROM project_members WHERE project_id = $1 AND user_id != $2",
+            [project_id, userId]
+        );
+        const ownerResult = await db.query(
+            "SELECT owner_id FROM projects WHERE id = $1 AND owner_id != $2",
+            [project_id, userId]
+        );
+
+        const recipients = new Set([...membersResult.rows.map(r => r.user_id), ...ownerResult.rows.map(r => r.owner_id)]);
+        const notifContent = `Nouveau commentaire de ${req.user?.username} sur la tâche "${title}"`;
+        
+        for (const recipientId of recipients) {
+            await createNotification(recipientId, notifContent, 'TASK_COMMENT');
+        }
+
+        // 2. Notification Temps Réel (Socket)
         io.to(project_id).emit('new-comment', {
             taskId,
             author: req.user?.username,
             content: content,
-            message: `Nouveau commentaire sur la tâche "${title}"`
+            message: notifContent
         });
 
         return res.status(201).json(comment);

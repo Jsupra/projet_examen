@@ -1,6 +1,6 @@
 # Projet Examen - Gestionnaire de Projets
 
-Cette application est une API de gestion de projets et de tâches, permettant la création de projets, le suivi de tâches, et une gestion collaborative sécurisée.
+Cette application est une API de gestion de projets collaborative complète avec notifications en temps réel, historique d'activité et sécurité avancée.
 
 ## 🚀 Technologies Utilisées
 
@@ -12,6 +12,7 @@ Cette application est une API de gestion de projets et de tâches, permettant la
 - **Bcrypt** : Hachage sécurisé des mots de passe.
 - **Zod** : Validation de schémas et de données.
 - **Dotenv**: Gestion des variables d'environnement.
+- **Socket.io**: Notifications en temps réel.
 
 ### Frontend
 - (Placé dans le dossier `/CLIENT`) - À venir.
@@ -25,8 +26,8 @@ projet-examen/
 ├── CLIENT/              # Code source du front-end
 ├── SERVER/              # Code source du back-end
 │   ├── src/
-│   │   ├── config/      # Configuration (DB, Initialisation)
-│   │   ├── controllers/ # Logique métier (Auth, Projets)
+│   │   ├── config/      # Configuration (DB, Socket, Initialisation)
+│   │   ├── controllers/ # Logique métier (Auth, Projets, Notifications)
 │   │   ├── database/    # Schémas SQL et migrations
 │   │   ├── middlewares/ # Authentification et rôles
 │   │   ├── models/      # Requêtes SQL et Types TS
@@ -44,30 +45,36 @@ Toutes les routes (sauf auth) nécessitent un Header `Authorization: Bearer <tok
 
 ### Authentification (`/api/auth`)
 - `POST /register` : Créer un compte.
-- `POST /login` : Se connecter et recevoir un token.
-- `POST /logout` : Déconnexion.
+- `POST /login` : Se connecter et recevoir un token (AccessToken + RefreshToken en cookie).
+- `POST /refresh` : Renouveler l'AccessToken expiré.
+- `POST /logout` : Déconnexion sécurisée.
 
 ### Utilisateurs & Profil (`/api/users`)
 - `GET /profile` : Récupérer son propre profil.
 - `GET /all_users` : (Admin uniquement) Récupérer tous les utilisateurs.
 - `GET /search?q=...` : Rechercher des utilisateurs (pour les invitations).
-- `GET /notifications` : Récupérer ses notifications.
-- `PATCH /notifications/:id/read` : Marquer une notification comme lue.
+
+### Notifications (`/api/notifications`)
+- `GET /` : Récupérer ses notifications (Historique des alertes).
+- `PATCH /:id/read` : Marquer une notification comme lue.
 
 ### Projets (`/api/projects`)
-- `GET /` : Lister ses projets créés et rejoints (Supporte `?search=...`, `?page=1`, `?limit=10`).
+- `GET /` : Lister ses projets créés et rejoints (Pagination, Recherche, Tri).
 - `POST /` : Créer un nouveau projet.
 - `GET /:id` : Détails d'un projet (inclut toutes les tâches).
 - `PUT /:id` : Modifier un projet (Propriétaire uniquement).
 - `DELETE /:id` : Supprimer un projet.
-- `GET /:id/stats` : Obtenir les statistiques du projet (pourcentage d'avancement, compte des tâches).
+- `GET /:id/stats` : Statistiques d'avancement (pourcentage, compte des tâches).
+- `GET /:id/history` : Journal d'activité (Audit log du projet).
 - `POST /:id/members` : Inviter un utilisateur au projet.
 
-### Tâches
+### Tâches & Commentaires
 - `GET /api/projects/:id/tasks` : Lister les tâches d'un projet avec filtres.
-    - Filtres : `?status=...` (A faire, En cours, Termine), `?search=...`
+    - Filtres : `?status=...`, `?search=...`, `?sortBy=...`, `?order=...`
 - `POST /api/projects/:id/tasks` : Ajouter une tâche à un projet.
 - `PATCH /api/projects/tasks/:taskId/status` : Changer le statut d'une tâche.
+- `GET /api/projects/:taskId/comments` : Voir les commentaires d'une tâche.
+- `POST /api/projects/:taskId/comments` : Ajouter un commentaire (Notifie les membres).
 
 ---
 
@@ -91,10 +98,10 @@ Toutes les routes (sauf auth) nécessitent un Header `Authorization: Bearer <tok
 
 3. **Configurez les variables d'environnement :**
    - Créez un fichier `.env` basé sur `.env.example`.
-   - Renseignez vos informations de connexion PostgreSQL.
+   - Renseignez vos informations de connexion PostgreSQL et vos secrets JWT.
 
 4. **Initialisez la base de données :**
-   - Le schéma est chargé automatiquement au démarrage ou via `src/database/schema.sql`.
+   - Le schéma est chargé automatiquement au démarrage.
 
 ---
 

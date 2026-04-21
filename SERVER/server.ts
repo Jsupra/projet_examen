@@ -9,6 +9,8 @@ import db from "./src/config/database";
 import apiRoutes from "./src/routes/index";
 import setupDb from "./src/config/dbInit";
 import { initSocket } from "./src/config/socket";
+import swaggerUi from "swagger-ui-express";
+import { swaggerSpec } from "./src/config/swagger";
 
 const app = express();
 const httpServer = createServer(app); // lier express au serveur HTTP
@@ -27,6 +29,9 @@ app.use(express.json());
 app.get("/", (req: Request, res: Response) => {
     res.send("API opérationnelle");
 });
+
+// Documentation Swagger
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use("/api", apiRoutes);
 
