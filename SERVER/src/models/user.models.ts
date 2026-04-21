@@ -18,3 +18,19 @@ export const searchUsersInDb = async (query: string, excludeUserId: string) => {
         throw err;
     }
 };
+
+export const markNotificationAsReadInDb = async (notificationId: string, userId: string) => {
+    try {
+        const query = `
+            UPDATE notifications 
+            SET is_read = TRUE 
+            WHERE id = $1 AND user_id = $2
+            RETURNING *;
+        `;
+        const result = await db.query(query, [notificationId, userId]);
+        return result.rows[0];
+    } catch (err) {
+        console.error("Error marking notification as read", err);
+        throw err;
+    }
+};

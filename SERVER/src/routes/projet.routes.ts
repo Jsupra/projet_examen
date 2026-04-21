@@ -1,6 +1,7 @@
 import express from "express";
 import { createProject, findAllUsersAllProjects, modify_project, remove_project, create_task, change_task_status, get_project_details, list_project_tasks, get_project_stats, invite_member } from "../controllers/projet.Controllers";
 import { verifyJWT } from "../middlewares/authenticationToken.middlewares";
+import { get_task_comments, post_comment } from "../controllers/comment.controllers";
 
 
 const router = express.Router();
@@ -22,5 +23,8 @@ router.get('/:projectId/stats', verifyJWT, get_project_stats);
 router.post('/:projectId/members', verifyJWT, invite_member);
 
 
+// Routes pour les commentaires
+router.post('/:taskId/comments', verifyJWT, post_comment);
+router.get('/:taskId/comments', verifyJWT, get_task_comments);
 
 export default router;

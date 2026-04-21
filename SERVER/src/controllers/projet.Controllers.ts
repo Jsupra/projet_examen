@@ -1,4 +1,4 @@
-import dotenv from "dotenv";
+
 import { Request, Response } from "express";
 import {
     insertProject, getProjectsWithPagination, updateProjectInDb, deleteProjectInDb, insertTask,
@@ -196,30 +196,40 @@ export const get_project_details = async (req: Request, res: Response) => {
 
 export const list_project_tasks = async (req: Request, res: Response) => {
     try {
-        const { projectId } = req.params;
-        const statut = (req.query.statut || req.query.status) as string; // Accepte les deux pour éviter les erreurs de frappe
-        const search = req.query.search as string;
-        const userId = req.user?.id;
+        const projectId = req.params.projectId as string;
+        const userId = req.user?.id as string;
 
-        // 1. Sécurité : Vérifier si l'utilisateur a accès au projet
+        // --- NOUVEAUTÉ NIVEAU 2 : TRI ---
+        const statut = (req.query.statut || req.query.status) as string;
+        const search = req.query.search as string;
+        const sortBy = (req.query.sortBy as string) || 'echeance'; // Tri par défaut
+        const order = (req.query.order as string)?.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+
+        // --- SÉCURITÉ MISE À JOUR (Proprio OU Membre) ---
         const accessCheck = await db.query(
-            "SELECT id FROM projects WHERE id = $1 AND owner_id = $2",
+            `SELECT p.id 
+             FROM projects p 
+             LEFT JOIN project_members pm ON p.id = pm.project_id 
+             WHERE p.id = $1 AND (p.owner_id = $2 OR pm.user_id = $2)`,
             [projectId, userId]
         );
 
         if (accessCheck.rows.length === 0) {
-            return res.status(403).json({ error: "Accès refusé" });
+            return res.status(403).json({ error: "Accès refusé : vous n'êtes pas membre de ce projet" });
         }
 
-        // 2. Récupération des tâches filtrées
+        // 2. Appel au service avec les nouveaux paramètres de tri
         const tasks = await getFilteredTasks(
-            projectId as string, 
-            statut as string, 
-            search as string
+            projectId, 
+            statut, 
+            search,
+            sortBy,
+            order as 'ASC' | 'DESC'
         );
 
         return res.status(200).json(tasks);
     } catch (error) {
+        console.error("Error fetching project tasks:", error);
         return res.status(500).json({ error: "Erreur serveur" });
     }
 };

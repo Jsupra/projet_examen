@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 import { Request, Response } from "express";
-import { findUserByEmail_UserName, createrUser, insertRefreshToken, checkUserExistence, deleteRefreshToken, findUserById, findAllUsers } from "../models/auth.models";
+import { findUserByEmail_UserName, createrUser, insertRefreshToken, checkUserExistence, deleteRefreshToken, findUserById, findAllUsers, findRefreshToken } from "../models/auth.models";
 import { register_dto, login_dto } from "../models/types";
 import dotenv from "dotenv";
 import { handleAccessToken, handleRefreshToken } from "../../utils/jwt.utils";
@@ -196,8 +196,48 @@ export const get_profile = async (req: Request, res: Response) => {
     } catch (error) {
         console.error(error);
         return res.status(500).json({
-            error : "interna servor error during finding information"
+            error : "internal server error during finding information"
         })
+    }
+}
+
+export const refreshToken = async (req: Request, res: Response) => {
+    try {
+        const refreshToken = req.cookies.refreshToken;
+        if (!refreshToken) return res.status(401).json({ error: "Refresh token missing" });
+
+        const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET;
+        const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET;
+
+        if (!REFRESH_TOKEN_SECRET || !ACCESS_TOKEN_SECRET) {
+            return res.status(500).json({ error: "Internal server error: secrets missing" });
+        }
+
+        // 1. Verifier la validité du token JWT
+        const jwt = require("jsonwebtoken");
+        let payload: any;
+        try {
+            payload = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET);
+        } catch (err) {
+            return res.status(403).json({ error: "Invalid or expired refresh token" });
+        }
+
+        // 2. Verifier si le token est bien en base de données (sécurité)
+        const tokenInDb = await findRefreshToken(payload.id);
+        if (!tokenInDb || tokenInDb.token !== refreshToken) {
+            return res.status(403).json({ error: "Refresh token not recognized" });
+        }
+
+        // 3. Generer un nouvel access token
+        const newAccessToken = handleAccessToken(payload.id, payload.username, payload.role, ACCESS_TOKEN_SECRET);
+
+        return res.status(200).json({
+            accessToken: newAccessToken
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Internal server error during token refresh" });
     }
 }
 

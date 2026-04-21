@@ -21,19 +21,6 @@ export const insertProject = async (title: string, description: string, userId: 
 };
 
 
-// export const getAllProjects = async (userId: string) => {
-//     try {
-//         const query = `
-//             SELECT * FROM projects WHERE owner_id = $1;
-//         `;
-//         const result = await db.query(query, [userId]);
-//         return result.rows;
-//     } catch (err) {
-//         console.error("Error getting projects", err);
-//         throw err;
-//     }
-// }
-
 
 export const getProjectsWithPagination = async (userId: string, limit: number, offset: number, search?: string) => {
     try {
@@ -146,26 +133,6 @@ export const updateTaskStatus = async (taskId: string, newStatus: Task_Status) =
 };
 
 
-
-// export const getProjectByIdInDb = async (projectId: string, userId: string) => {
-//     const query = `
-//         SELECT p.*, 
-//                COALESCE(JSON_AGG(t.*) FILTER (WHERE t.id IS NOT NULL), '[]') AS tasks
-//         FROM projects p
-//         LEFT JOIN tasks t ON p.id = t.project_id
-//         WHERE p.id = $1 AND p.owner_id = $2
-//         GROUP BY p.id;
-//     `;
-
-//     /* LEFT JOIN : Permet d'afficher le projet même s'il n'a pas encore de tâches.
-//     JSON_AGG : Rassemble toutes les tâches du projet dans un tableau.
-//     COALESCE(..., '[]') : Si le projet n'a pas de tâches, cela renvoie un tableau vide [] au lieu de null. */
-//     const result = await db.query(query, [projectId, userId]);
-//     return result.rows[0];
-// };
-
-
-
 export const getProjectByIdInDb = async (projectId: string, userId: string) => {
     try {
         const query = `
@@ -205,26 +172,31 @@ export const getProjectByIdInDb = async (projectId: string, userId: string) => {
 };
 
 
-export const getFilteredTasks = async (projectId: string, status?: string, search?: string) => {
-    try {
-        const query = `
-            SELECT t.*, u.name_display AS assigned_to_name
-            FROM tasks t
-            LEFT JOIN users u ON t.assigned_to = u.id
-            WHERE t.project_id = $1
-              AND ($2::text IS NULL OR t.statut = $2::Task_Statut)
-              AND ($3::text IS NULL OR t.title ILIKE $3)
-            ORDER BY t.echeance ASC;
-        `;
-        
-        const searchTerm = search ? `%${search}%` : null;
-        
-        const result = await db.query(query, [projectId, status || null, searchTerm]);
-        return result.rows;
-    } catch (err) {
-        console.error("Error getting filtered tasks", err);
-        throw err;
-    }
+export const getFilteredTasks = async (
+    projectId: string, 
+    status?: string, 
+    search?: string, 
+    sortBy: string = 'echeance', 
+    order: 'ASC' | 'DESC' = 'ASC'
+) => {
+    // Sécurité : On vérifie que le sortBy fait partie des colonnes autorisées
+    const allowedColumns = ['echeance', 'statut', 'title', 'created_at'];
+    const safeSortBy = allowedColumns.includes(sortBy) ? sortBy : 'echeance';
+    const safeOrder = order === 'DESC' ? 'DESC' : 'ASC';
+
+    const query = `
+        SELECT t.*, u.name_display AS assigned_to_name
+        FROM tasks t
+        LEFT JOIN users u ON t.assigned_to = u.id
+        WHERE t.project_id = $1
+          AND ($2::text IS NULL OR t.statut = $2::Task_Statut)
+          AND ($3::text IS NULL OR t.title ILIKE $3)
+        ORDER BY t.${safeSortBy} ${safeOrder};
+    `;
+    
+    const searchTerm = search ? `%${search}%` : null;
+    const result = await db.query(query, [projectId, status || null, searchTerm]);
+    return result.rows;
 };
 
 

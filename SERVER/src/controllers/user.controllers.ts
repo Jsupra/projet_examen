@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { searchUsersInDb } from "../models/user.models";
+import { searchUsersInDb, markNotificationAsReadInDb } from "../models/user.models";
 import db from "../config/database";
 
 
@@ -32,5 +32,22 @@ export const get_my_notifications = async (req: Request, res: Response) => {
         return res.status(200).json(result.rows);
     } catch (error) {
         return res.status(500).json({ error: "Erreur lors de la récupération des notifications" });
+    }
+};
+
+export const mark_notification_as_read = async (req: Request, res: Response) => {
+    try {
+        const notificationId = req.params.notificationId as string;
+        const userId = req.user?.id as string;
+
+        const updatedNotif = await markNotificationAsReadInDb(notificationId, userId);
+
+        if (!updatedNotif) {
+            return res.status(404).json({ error: "Notification introuvable ou vous n'avez pas l'autorisation" });
+        }
+
+        return res.status(200).json({ message: "Notification marquée comme lue", notification: updatedNotif });
+    } catch (error) {
+        return res.status(500).json({ error: "Erreur serveur" });
     }
 };

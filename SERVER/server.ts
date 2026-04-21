@@ -3,6 +3,7 @@ dotenv.config();
 
 import express, { Request, Response } from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import db from "./src/config/database";
 import apiRoutes from "./src/routes/index";
 import setupDb from "./src/config/dbInit";
@@ -17,6 +18,7 @@ const PORT = process.env.PORT || 3000;
 
 // --- Middlewares ---
 app.use(cors());
+app.use(cookieParser());
 app.use(express.json());
 
 // --- Routes ---

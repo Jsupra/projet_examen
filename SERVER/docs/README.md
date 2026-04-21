@@ -47,12 +47,21 @@ Toutes les routes (sauf auth) nécessitent un Header `Authorization: Bearer <tok
 - `POST /login` : Se connecter et recevoir un token.
 - `POST /logout` : Déconnexion.
 
+### Utilisateurs & Profil (`/api/users`)
+- `GET /profile` : Récupérer son propre profil.
+- `GET /all_users` : (Admin uniquement) Récupérer tous les utilisateurs.
+- `GET /search?q=...` : Rechercher des utilisateurs (pour les invitations).
+- `GET /notifications` : Récupérer ses notifications.
+- `PATCH /notifications/:id/read` : Marquer une notification comme lue.
+
 ### Projets (`/api/projects`)
-- `GET /` : Lister ses projets (Supporte `?search=...`, `?page=1`, `?limit=10`).
+- `GET /` : Lister ses projets créés et rejoints (Supporte `?search=...`, `?page=1`, `?limit=10`).
 - `POST /` : Créer un nouveau projet.
 - `GET /:id` : Détails d'un projet (inclut toutes les tâches).
 - `PUT /:id` : Modifier un projet (Propriétaire uniquement).
 - `DELETE /:id` : Supprimer un projet.
+- `GET /:id/stats` : Obtenir les statistiques du projet (pourcentage d'avancement, compte des tâches).
+- `POST /:id/members` : Inviter un utilisateur au projet.
 
 ### Tâches
 - `GET /api/projects/:id/tasks` : Lister les tâches d'un projet avec filtres.
