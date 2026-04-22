@@ -22,22 +22,36 @@ export const insertProject = async (title: string, description: string, userId: 
 
 
 
-export const getProjectsWithPagination = async (userId: string, limit: number, offset: number, search?: string) => {
+export const getProjectsWithPagination = async (
+    userId: string, 
+    limit: number, 
+    offset: number, 
+    search?: string,
+    sortBy: string = 'created_at',
+    order: string = 'DESC'
+) => {
     try {
         const searchTerm = search ? `%${search}%` : null;
 
-        // 1. On récupère les projets filtrés (créés ou rejoints) pour la page actuelle
+        // Sécurité : On vérifie les colonnes de tri
+        const allowedColumns = ['created_at', 'title'];
+        const safeSortBy = allowedColumns.includes(sortBy) ? sortBy : 'created_at';
+        const safeOrder = order.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+
         const dataQuery = `
-            SELECT p.* FROM projects p
+            SELECT 
+                p.*,
+                (SELECT COUNT(*) FROM tasks t WHERE t.project_id = p.id) as total_tasks,
+                (SELECT COUNT(*) FROM tasks t WHERE t.project_id = p.id AND t.statut = 'Termine') as completed_tasks
+            FROM projects p
             LEFT JOIN project_members pm ON p.id = pm.project_id
             WHERE (p.owner_id = $1 OR pm.user_id = $1)
               AND ($4::text IS NULL OR p.title ILIKE $4)
             GROUP BY p.id
-            ORDER BY p.created_at DESC 
+            ORDER BY p.${safeSortBy} ${safeOrder}
             LIMIT $2 OFFSET $3;
         `;
         
-        // 2. On compte le total filtré pour la pagination (COUNT DISTINCT pour éviter les doublons)
         const countQuery = `
             SELECT COUNT(DISTINCT p.id) FROM projects p
             LEFT JOIN project_members pm ON p.id = pm.project_id
@@ -102,12 +116,15 @@ export const insertTask = async (
     echeance: Date
 ) => {
     try {
+        // Sécurité : Si assignedTo est une chaîne vide, on met null pour PostgreSQL
+        const finalAssignedTo = assignedTo && assignedTo.trim() !== '' ? assignedTo : null;
+        
         const query = `
             INSERT INTO tasks (project_id, title, description, assigned_to, echeance)
             VALUES ($1, $2, $3, $4, $5)
             RETURNING *;
         `;
-        const result = await db.query(query, [projectId, title, description, assignedTo, echeance]);
+        const result = await db.query(query, [projectId, title, description, finalAssignedTo, echeance]);
         return result.rows[0];
     } catch (err) {
         console.error("Error inserting task", err);
@@ -137,30 +154,27 @@ export const getProjectByIdInDb = async (projectId: string, userId: string) => {
     try {
         const query = `
             SELECT 
-                p.id, 
-                p.title, 
-                p.description, 
-                p.owner_id,
-                p.created_at,
-                p.updated_at,
-                COALESCE(
-                    JSON_AGG(
-                        JSON_BUILD_OBJECT(
-                            'id', t.id,
-                            'title', t.title,
-                            'description', t.description,
-                            'statut', t.statut,
-                            'echeance', t.echeance,
-                            'assigned_to', u.id,
-                            'assigned_to_name', u.name_display
-                        )
-                    ) FILTER (WHERE t.id IS NOT NULL), 
-                    '[]'
-                ) AS tasks
+                p.id, p.title, p.description, p.owner_id, p.created_at, p.updated_at,
+                (
+                    SELECT COALESCE(JSON_AGG(JSON_BUILD_OBJECT(
+                        'id', t.id, 'title', t.title, 'description', t.description,
+                        'statut', t.statut, 'echeance', t.echeance, 'assigned_to', t.assigned_to
+                    )), '[]') FROM tasks t WHERE t.project_id = p.id
+                ) AS tasks,
+                (
+                    SELECT COALESCE(JSON_AGG(JSON_BUILD_OBJECT(
+                        'id', u.id, 'username', u.username, 'email', u.email
+                    )), '[]') FROM users u 
+                    JOIN project_members pm ON u.id = pm.user_id 
+                    WHERE pm.project_id = p.id
+                ) AS members,
+                (
+                   SELECT JSON_BUILD_OBJECT('id', u.id, 'username', u.username)
+                   FROM users u WHERE u.id = p.owner_id
+                ) as owner
             FROM projects p
-            LEFT JOIN tasks t ON p.id = t.project_id
-            LEFT JOIN users u ON t.assigned_to = u.id
-            WHERE p.id = $1 AND p.owner_id = $2
+            LEFT JOIN project_members pm ON p.id = pm.project_id
+            WHERE p.id = $1 AND (p.owner_id = $2 OR pm.user_id = $2)
             GROUP BY p.id;
         `;
         const result = await db.query(query, [projectId, userId]);
@@ -264,6 +278,18 @@ export const getUserProjectsInDb = async (userId: string) => {
         return result.rows;
     } catch (err) {
         console.error("Error getting user projects", err);
+        throw err;
+    }
+};
+
+
+export const deleteTaskInDb = async (taskId: string) => {
+    try {
+        const query = `DELETE FROM tasks WHERE id = $1 RETURNING *;`;
+        const result = await db.query(query, [taskId]);
+        return result.rows[0];
+    } catch (err) {
+        console.error("Error deleting task", err);
         throw err;
     }
 };

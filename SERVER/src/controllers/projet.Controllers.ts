@@ -3,7 +3,8 @@ import { Request, Response } from "express";
 import { io } from "../config/socket";
 import {
     insertProject, getProjectsWithPagination, updateProjectInDb, deleteProjectInDb, insertTask,
-    updateTaskStatus, getProjectByIdInDb, getFilteredTasks, getProjectStatsInDb, inviteMemberToProject
+    updateTaskStatus, getProjectByIdInDb, getFilteredTasks, getProjectStatsInDb, inviteMemberToProject,
+    deleteTaskInDb
 } from "../models/projet.models";
 import { createNotification } from "../models/notification.models";
 import { logActivity } from "./activity.controllers";
@@ -43,9 +44,11 @@ export const findAllUsersAllProjects = async (req: Request, res: Response) => {
         const page = parseInt(req.query.page as string) || 1;
         const limit = parseInt(req.query.limit as string) || 10;
         const search = req.query.search as string;
+        const sortBy = req.query.sortBy as string || 'created_at';
+        const order = req.query.order as string || 'DESC';
         const offset = (page - 1) * limit;
 
-        const { projects, total } = await getProjectsWithPagination(userId, limit, offset, search);
+        const { projects, total } = await getProjectsWithPagination(userId, limit, offset, search, sortBy, order);
 
         return res.status(200).json({
             message: "projects fetched successfully",
@@ -198,7 +201,9 @@ export const change_task_status = async (req: Request, res: Response) => {
         const notifContent = `La tâche "${title}" est passée en "${statut}" (par ${req.user?.username})`;
         
         for (const recipientId of recipients) {
-            await createNotification(recipientId, notifContent, 'TASK_UPDATE');
+            const notif = await createNotification(recipientId, notifContent, 'TASK_UPDATE');
+            console.log(`Envoi notification temps réel à ${recipientId}`);
+            io.to(recipientId).emit('new-notification', notif);
         }
 
         // Notification Temps Réel (Socket)
@@ -355,7 +360,7 @@ export const invite_member = async (req: Request, res: Response) => {
 export const get_project_history = async (req: Request, res: Response) => {
     const { projectId } = req.params;
     const result = await db.query(
-        `SELECT al.*, u.name_display 
+        `SELECT al.*, u.name_display, u.username 
          FROM activity_logs al
          LEFT JOIN users u ON al.user_id = u.id
          WHERE al.project_id = $1
@@ -363,4 +368,42 @@ export const get_project_history = async (req: Request, res: Response) => {
         [projectId]
     );
     res.json(result.rows);
+};
+
+
+export const delete_task = async (req: Request, res: Response) => {
+    try {
+        const { taskId } = req.params as { taskId: string };
+        const userId = req.user?.id as string;
+        const userRole = req.user?.role;
+
+        // Vérification : proprio du projet ou admin
+        const checkQuery = `
+            SELECT t.id, t.project_id, t.title, p.owner_id
+            FROM tasks t
+            JOIN projects p ON t.project_id = p.id
+            WHERE t.id = $1
+        `;
+        const taskCheck = await db.query(checkQuery, [taskId]);
+
+        if (taskCheck.rows.length === 0) {
+            return res.status(404).json({ error: "Tâche introuvable" });
+        }
+
+        const { owner_id, project_id, title } = taskCheck.rows[0];
+        const isOwner = userId === owner_id;
+        const isAdmin = userRole === 'admin';
+
+        if (!isOwner && !isAdmin) {
+            return res.status(403).json({ error: "Seul le propriétaire du projet peut supprimer des tâches" });
+        }
+
+        await deleteTaskInDb(taskId);
+        await logActivity(project_id, userId, 'TASK_DELETE', `a supprimé la tâche "${title}"`);
+
+        return res.status(200).json({ message: "Tâche supprimée avec succès" });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Erreur serveur" });
+    }
 };

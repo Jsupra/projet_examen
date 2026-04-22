@@ -73,14 +73,20 @@ export const post_comment = async (req: Request, res: Response) => {
         const notifContent = `Nouveau commentaire de ${req.user?.username} sur la tâche "${title}"`;
         
         for (const recipientId of recipients) {
-            await createNotification(recipientId, notifContent, 'TASK_COMMENT');
+            const notif = await createNotification(recipientId, notifContent, 'TASK_COMMENT');
+            io.to(recipientId).emit('new-notification', notif);
         }
 
         // 2. Notification Temps Réel (Socket)
+        const fullComment = {
+            ...comment,
+            username: req.user?.username,
+            created_at: new Date().toISOString()
+        };
+
         io.to(project_id).emit('new-comment', {
             taskId,
-            author: req.user?.username,
-            content: content,
+            comment: fullComment,
             message: notifContent
         });
 

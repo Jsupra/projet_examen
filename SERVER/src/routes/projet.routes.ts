@@ -1,5 +1,5 @@
 import express from "express";
-import { createProject, findAllUsersAllProjects, modify_project, remove_project, create_task, change_task_status, get_project_details, list_project_tasks, get_project_stats, invite_member, get_project_history } from "../controllers/projet.Controllers";
+import { createProject, findAllUsersAllProjects, modify_project, remove_project, create_task, change_task_status, get_project_details, list_project_tasks, get_project_stats, invite_member, get_project_history, delete_task } from "../controllers/projet.Controllers";
 import { verifyJWT } from "../middlewares/authenticationToken.middlewares";
 import { get_task_comments, post_comment } from "../controllers/comment.controllers";
 
@@ -177,7 +177,8 @@ router.post('/:projectId/tasks', verifyJWT, create_task);
  *       200:
  *         description: Statut mis à jour
  */
-router.patch('/tasks/:taskId/status', verifyJWT, change_task_status); 
+router.patch('/tasks/:taskId/status', verifyJWT, change_task_status);
+router.delete('/tasks/:taskId', verifyJWT, delete_task);
 
 /**
  * @swagger

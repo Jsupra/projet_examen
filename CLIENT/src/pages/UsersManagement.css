@@ -1,0 +1,89 @@
+.users-mgmt {
+  padding: 1rem;
+}
+
+.error-banner {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--danger-color);
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.users-table-container {
+  overflow-x: auto;
+  margin-top: 1.5rem;
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.users-table th {
+  padding: 1rem;
+  border-bottom: 2px solid var(--border-color);
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+}
+
+.users-table td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+
+.user-row {
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.user-row:hover {
+  background-color: rgba(99, 102, 241, 0.04);
+}
+
+.user-row.active {
+  background-color: rgba(99, 102, 241, 0.08);
+}
+
+.user-info-cell {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.font-bold { font-weight: 600; }
+.text-xs { font-size: 0.75rem; }
+
+.btn-sm {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+/* User Drawer */
+.user-drawer-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-project-card {
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.user-project-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+}
+
+.user-project-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}

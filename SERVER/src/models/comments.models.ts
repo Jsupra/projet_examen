@@ -13,7 +13,7 @@ export const addCommentInDb = async (taskId: string, authorId: string, content: 
 
 export const getTaskCommentsFromDb = async (taskId: string) => {
     const query = `
-        SELECT c.*, u.name_display as author_name
+        SELECT c.*, u.username
         FROM task_comments c
         JOIN users u ON c.author_id = u.id
         WHERE c.task_id = $1
